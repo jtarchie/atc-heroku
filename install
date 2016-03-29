@@ -1,0 +1,8 @@
+#!/bin/bash
+
+mkdir -p vendor
+pushd vendor
+  wget https://github.com/concourse/concourse/releases/download/v0.76.0/concourse_linux_amd64
+  mv concourse_linux_amd64 concourse
+  chmod +x concourse
+popd

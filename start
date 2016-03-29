@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -eux
+
+workdir=$HOME
+
+session_key=$workdir/session-key
+tsa_key=$workdir/tsa-key
+worker_key=$workdir/worker-key
+
+for key in $session_key $tsa_key $worker_key; do
+  [ -e "$key" ] || ssh-keygen -N '' -t rsa -f "$key"
+done
+
+./vendor/concourse web \
+  --development-mode \
+  --session-singing-key $session_key \
+  --tsa-bind-port 2223 \
+  --tsa-host-key $tsa_key \
+  --tsa-auhorized-keys ${worker_key}.pub
+
