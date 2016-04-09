@@ -1,8 +1,36 @@
 #!/bin/bash
 
-mkdir -p vendor
-pushd vendor
-  wget https://github.com/concourse/concourse/releases/download/v0.76.0/concourse_linux_amd64
-  mv concourse_linux_amd64 concourse
-  chmod +x concourse
+app_name="test-concourse-ci"
+
+set -eux
+
+mkdir -p build
+pushd build
+  if [ ! -e concourse ]; then
+    wget https://github.com/concourse/concourse/releases/download/v1.0.0/concourse_linux_amd64
+    mv concourse_linux_amd64 concourse
+    chmod +x concourse
+  fi
+
+  workdir=$(pwd)
+  session_key=$workdir/session-key
+  tsa_key=$workdir/tsa-key
+  worker_key=$workdir/worker-key
+
+  for key in $session_key $tsa_key $worker_key; do
+    [ -e "$key" ] || ssh-keygen -N '' -t rsa -f "$key"
+  done
+
+  cp ../assets/* .
+popd
+
+heroku info -a $app_name || {
+  heroku create -a $app_name -b https://github.com/ryandotsmith/null-buildpack
+  heroku labs:enable runtime-dyno-metadata
+  heroku addons:create heroku-postgresql:hobby-dev
+  heroku config:set AUTH_USERNAME=admin AUTH_PASSWORD=admin
+}
+
+pushd build
+  heroku builds:create -a $app_name
 popd

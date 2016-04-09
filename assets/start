@@ -3,23 +3,18 @@
 set -eux
 
 workdir=$HOME
-
 session_key=$workdir/session-key
 tsa_key=$workdir/tsa-key
 worker_key=$workdir/worker-key
 
-for key in $session_key $tsa_key $worker_key; do
-  [ -e "$key" ] || ssh-keygen -N '' -t rsa -f "$key"
-done
-
 ip=$(tail -1 /etc/hosts | cut -d ' ' -f 1)
 
-./vendor/concourse web \
+./concourse web \
   --basic-auth-username $AUTH_USERNAME \
   --basic-auth-password $AUTH_PASSWORD \
   --external-url http://$HEROKU_APP_NAME.herokuapp.com \
   --bind-port $PORT \
-  --peerl-url http://$ip:$PORT \
+  --peer-url http://$ip:$PORT \
   --postgres-data-source $DATABASE_URL \
   --session-signing-key $session_key \
   --tsa-bind-port 2223 \
