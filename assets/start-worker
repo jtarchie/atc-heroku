@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -eux
+
+workdir=$HOME
+session_key=$workdir/session-key
+tsa_key=$workdir/tsa-key
+worker_key=$workdir/worker-key
+
+ip=$(tail -1 /etc/hosts | cut -d ' ' -f 1)
+
+./concourse web \
+  --basic-auth-username $AUTH_USERNAME \
+  --basic-auth-password $AUTH_PASSWORD \
+  --external-url http://$HEROKU_APP_NAME.herokuapp.com \
+  --bind-port $PORT \
+  --peer-url http://$ip:$PORT \
+  --postgres-data-source $DATABASE_URL \
+  --session-signing-key $session_key \
+  --tsa-bind-port 2223 \
+  --tsa-host-key $tsa_key \
+  --tsa-authorized-keys ${worker_key}.pub
+

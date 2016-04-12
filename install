@@ -1,6 +1,8 @@
 #!/bin/bash
 
-app_name="test-concourse-ci"
+app_name=${1:-test-concourse-ci}
+auth_username=${2:-admin}
+auth_password=${3:-admin}
 
 set -eux
 
@@ -28,7 +30,11 @@ heroku info -a $app_name || {
   heroku create -a $app_name -b https://github.com/ryandotsmith/null-buildpack
   heroku labs:enable runtime-dyno-metadata
   heroku addons:create heroku-postgresql:hobby-dev
-  heroku config:set AUTH_USERNAME=admin AUTH_PASSWORD=admin
+  heroku config:set AUTH_USERNAME=$auth_username AUTH_PASSWORD=$auth_password
+
+  worker_fingerprint=$(ssh-keygen -lf $worker_key | cut -d ' ' -f 2)
+  doctl compute ssh-key $app_name import --public-key-file ${worker_key}.pub
+  doctl compute droplet create $app_name --size 2gb --image_slug ubuntu-14-04-x64 --region nyc1 --ssh-keys $worker_fingerprint
 }
 
 pushd build
