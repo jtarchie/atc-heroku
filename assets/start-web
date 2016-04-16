@@ -12,7 +12,7 @@ ip=$(tail -1 /etc/hosts | cut -d ' ' -f 1)
 ./concourse web \
   --basic-auth-username $AUTH_USERNAME \
   --basic-auth-password $AUTH_PASSWORD \
-  --external-url http://$HEROKU_APP_NAME.herokuapp.com \
+  --external-url http://$(cat hostname) \
   --bind-port $PORT \
   --peer-url http://$ip:$PORT \
   --postgres-data-source $DATABASE_URL \

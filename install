@@ -24,17 +24,28 @@ pushd build
   done
 
   cp ../assets/* .
+  echo "$app_name.herokuapp.com" > hostname
 popd
 
 heroku info -a $app_name || {
+  set -eux
   heroku create -a $app_name -b https://github.com/ryandotsmith/null-buildpack
   heroku labs:enable runtime-dyno-metadata
   heroku addons:create heroku-postgresql:hobby-dev
   heroku config:set AUTH_USERNAME=$auth_username AUTH_PASSWORD=$auth_password
 
   worker_fingerprint=$(ssh-keygen -lf $worker_key | cut -d ' ' -f 2)
-  doctl compute ssh-key $app_name import --public-key-file ${worker_key}.pub
-  doctl compute droplet create $app_name --size 2gb --image_slug ubuntu-14-04-x64 --region nyc1 --ssh-keys $worker_fingerprint
+  doctl compute ssh-key import $app_name --public-key-file ${worker_key}.pub
+  doctl compute droplet create $app_name --size 2gb --image ubuntu-14-04-x64 --region nyc1 --ssh-keys $worker_fingerprint
+
+  droplet_ip=""
+  while [ "$droplet_ip" == "" ]; do
+    sleep 1
+    droplet_ip=$(doctl compute droplet list --format Name,PublicIPv4 --no-header | grep $app_name | awk '{print $2}')
+  done
+
+  scp -o StrictHostKeyChecking=no -v -i $worker_key -r $workdir root@$droplet_ip:~/concourse
+  ssh -o StrictHostKeyChecking=no -i $worker_key root@$droplet_ip "bash -c 'cd ~/concourse; nohup ./start-worker > /dev/null 2>&1 &'"
 }
 
 pushd build
